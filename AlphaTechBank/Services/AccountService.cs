@@ -1,4 +1,5 @@
 ﻿using AlphaTechBank.Models;
+using AlphaTechBank.ServiceExtensions;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -25,7 +26,7 @@ namespace AlphaTechBank.Services
                 PhoneNumber = "1234567890",
                 AccountNumber = "1234567890",
                 AccountType="savings",
-                Balance=56009
+                Balance=56000
             });
             Accounts.Add(new Account()
             {
@@ -63,11 +64,16 @@ namespace AlphaTechBank.Services
             {
                 Console.WriteLine("Enter a valid email address");
                 email = Console.ReadLine();
-                isValid = emailAddressAttribute.IsValid(email);
+                isValid = email.ValidateEmailAddress();
             }
             while (!isValid);
             Console.WriteLine("Enter your phone number");
             long.TryParse(Console.ReadLine(), out long phoneNumber);
+            if (!phoneNumber.ToString().ValidatePhoneNumber())
+            {
+                Console.WriteLine("Invalid email address. It will not be saved");
+                phoneNumber = 0;
+            }
             long accountNumber=0;
             while(Accounts.Where(a=>a.AccountNumber==accountNumber.ToString()).Any()||accountNumber==0)
             {
@@ -83,6 +89,10 @@ namespace AlphaTechBank.Services
                     if (ans == 's' && !Accounts.Where(a => a.UserId == id && a.AccountType == "saving").Any())
                     {
                         Console.WriteLine("Cannot have more than one saving account");
+                    }
+                    else if(ans == 'c' && !Accounts.Where(a => a.UserId == id && a.AccountType != "saving").Any())
+                    {
+                        Console.WriteLine("Cannot have more than one current account");
                     }
                     else
                     {
@@ -109,8 +119,9 @@ namespace AlphaTechBank.Services
                 Email = email
             };
             Accounts.Add(account);
+            Console.WriteLine($"Successfully created your account. Account number: {account.AccountNumber}");
         }
-        public void DepositFunds(string accountNumber)
+        public decimal DepositFunds(string accountNumber)
         {
             Account account = Accounts.Where(a => a.AccountNumber == accountNumber).FirstOrDefault();
             Console.WriteLine("Please enter a depositorName");
@@ -138,10 +149,16 @@ namespace AlphaTechBank.Services
             {
                 Console.WriteLine("Invalid amount entered");
             }
+            return account.Balance;
         }
-        public void WithdrawFunds(string accountNumber)
+        public decimal WithdrawFunds(string accountNumber)
         {
             Account account = Accounts.Where(a => a.AccountNumber == accountNumber).FirstOrDefault();
+            if(!account.IsActive)
+            {
+                Console.WriteLine("Your account has been suspended");
+                return 0;
+            }
             Console.WriteLine("Please enter the amount to withdraw");
             bool convertableAmount = decimal.TryParse(Console.ReadLine(), out decimal amount);
             if (convertableAmount)
@@ -180,10 +197,16 @@ namespace AlphaTechBank.Services
             {
                 Console.WriteLine("Invalid amount");
             }
+            return account.Balance;
         }
-        public void TransferFunds(string accountNumber)
+        public decimal TransferFunds(string accountNumber)
         {
             Account account = Accounts.Where(a => a.AccountNumber == accountNumber).FirstOrDefault();
+            if (!account.IsActive)
+            {
+                Console.WriteLine("Your account has been suspended");
+                return 0;
+            }
             Console.WriteLine("Please enter the receiver account number");
             string receiverAccountNumber = Console.ReadLine();
             Console.WriteLine("Please enter a description");
@@ -241,6 +264,7 @@ namespace AlphaTechBank.Services
                 }
             }
             else { Console.WriteLine("Invalid inputs provided"); }
+            return account.Balance;
         }
         public void PrintAccountStatement(string accountNumber)
         {

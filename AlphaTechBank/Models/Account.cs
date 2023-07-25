@@ -23,6 +23,7 @@ namespace AlphaTechBank.Models
         public string AccountType { get; set; }
         public decimal Balance { get; set; }
         public decimal minBalance => AccountType == "savings" ? 1000 : 0;
+        public bool IsActive { get; set; } = true;
         public List<Transations> Transations { get; set; } = new List<Transations>();
 
       
